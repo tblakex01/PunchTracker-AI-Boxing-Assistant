@@ -8,9 +8,6 @@
 
 A real-time boxing assistant application that uses computer vision and machine learning to track, count, and analyze your punches.
 
-<p align="center">
-  <span style="font-size:100px">🥊</span>
-</p>
 
 ## ✨ Features
 
