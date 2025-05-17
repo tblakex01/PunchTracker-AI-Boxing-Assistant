@@ -15,13 +15,12 @@ class DataManager:
         Args:
             data_dir: Directory to store data files
         """
-        self.data_dir = data_dir
-        self.db_path = os.path.join(data_dir, "punch_sessions.db")
+        self.data_dir = os.path.abspath(data_dir)
+        self.db_path = os.path.join(self.data_dir, "punch_sessions.db")
         self.current_session_id = None
         
         # Create data directory if it doesn't exist
-        if not os.path.exists(data_dir):
-            os.makedirs(data_dir)
+        os.makedirs(self.data_dir, exist_ok=True)
             
         # Initialize database
         self._initialize_database()

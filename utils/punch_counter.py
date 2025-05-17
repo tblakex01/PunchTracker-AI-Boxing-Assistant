@@ -51,6 +51,14 @@ class PunchCounter:
             "velocity_multiplier": 1.0,
             "direction_adjust": 0.0
         }
+
+    def increase_sensitivity(self, step=5):
+        """Decrease velocity threshold to increase sensitivity"""
+        self.velocity_threshold = max(5, self.velocity_threshold - step)
+
+    def decrease_sensitivity(self, step=5):
+        """Increase velocity threshold to decrease sensitivity"""
+        self.velocity_threshold = self.velocity_threshold + step
     
     def reset_counter(self):
         """Reset all punch counters"""

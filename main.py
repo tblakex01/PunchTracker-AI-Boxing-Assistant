@@ -28,6 +28,7 @@ class PunchTracker:
         self.is_running = False
         self.is_calibrating = False
         self.show_debug = False
+        self.is_paused = False
         self.session_start_time = None
         
         # Camera settings
@@ -74,6 +75,16 @@ class PunchTracker:
         """Process a single frame from the webcam"""
         # Detect poses in the frame
         poses = self.pose_detector.detect_pose(frame)
+
+        if self.is_paused:
+            return self.ui_manager.update_display(
+                frame,
+                self.punch_counter.total_count,
+                self.punch_counter.get_punch_types_count(),
+                self.session_start_time,
+                self.punch_counter.velocity_threshold,
+                paused=True
+            )
         
         if self.is_calibrating:
             # Handle calibration mode
@@ -95,10 +106,12 @@ class PunchTracker:
             
             # Update the UI with the latest data
             frame = self.ui_manager.update_display(
-                frame, 
-                self.punch_counter.total_count, 
+                frame,
+                self.punch_counter.total_count,
                 self.punch_counter.get_punch_types_count(),
-                self.session_start_time
+                self.session_start_time,
+                self.punch_counter.velocity_threshold,
+                paused=False
             )
             
             # Show debug visualization if enabled
@@ -145,6 +158,12 @@ class PunchTracker:
                         self.punch_counter.get_punch_types_count()
                     )
                     cv2.imshow('Punch Statistics', stats_image)
+                elif key == ord('p'):
+                    self.is_paused = not self.is_paused
+                elif key == ord('i'):
+                    self.punch_counter.increase_sensitivity()
+                elif key == ord('k'):
+                    self.punch_counter.decrease_sensitivity()
         
         finally:
             # Cleanup
