@@ -30,7 +30,7 @@ class UIManager:
             "uppercut": (155, 89, 182)  # Purple
         }
     
-    def update_display(self, frame, total_count, punch_counts, session_start_time):
+    def update_display(self, frame, total_count, punch_counts, session_start_time, sensitivity, paused=False):
         """
         Update the UI elements on the frame
         
@@ -47,14 +47,17 @@ class UIManager:
         display_frame = frame.copy()
         
         # Add semi-transparent overlay for stats panel
-        self._add_stats_panel(display_frame, total_count, punch_counts, session_start_time)
+        self._add_stats_panel(display_frame, total_count, punch_counts, session_start_time, sensitivity)
+
+        if paused:
+            self._add_paused_overlay(display_frame)
         
         # Add instructions
         self._add_instructions(display_frame)
         
         return display_frame
     
-    def _add_stats_panel(self, frame, total_count, punch_counts, session_start_time):
+    def _add_stats_panel(self, frame, total_count, punch_counts, session_start_time, sensitivity):
         """Add the statistics panel to the frame"""
         h, w = frame.shape[:2]
         
@@ -98,17 +101,22 @@ class UIManager:
             session_duration = datetime.now() - session_start_time
             minutes, seconds = divmod(session_duration.seconds, 60)
             time_str = f"Time: {minutes:02d}:{seconds:02d}"
-            cv2.putText(frame, time_str, 
+            cv2.putText(frame, time_str,
                        (panel_x + 10, y_offset + 30),
                        self.font, self.font_scale, self.font_color, self.line_thickness)
-            
+
             # Calculate and display punches per minute
             minutes_float = session_duration.total_seconds() / 60
             if minutes_float > 0:
                 ppm = total_count / minutes_float
-                cv2.putText(frame, f"Pace: {ppm:.1f} p/min", 
+                cv2.putText(frame, f"Pace: {ppm:.1f} p/min",
                            (panel_x + 10, y_offset + 55),
                            self.font, self.font_scale, self.font_color, self.line_thickness)
+
+        # Show current sensitivity
+        cv2.putText(frame, f"Sens.: {sensitivity}",
+                   (panel_x + 10, panel_y + self.panel_height - 10),
+                   self.font, self.font_scale, self.font_color, self.line_thickness)
     
     def _add_instructions(self, frame):
         """Add instruction text to the frame"""
@@ -119,7 +127,10 @@ class UIManager:
             "C - Calibrate",
             "D - Debug View",
             "R - Reset Session",
-            "S - Show Stats"
+            "S - Show Stats",
+            "P - Pause",
+            "I - Sens. +",
+            "K - Sens. -"
         ]
         
         # Create semi-transparent overlay for instructions
@@ -142,9 +153,18 @@ class UIManager:
         # Add instruction text
         for i, instruction in enumerate(instructions):
             y_pos = inst_y + 25 + (i * 25)
-            cv2.putText(frame, instruction, 
+            cv2.putText(frame, instruction,
                        (inst_x + 10, y_pos),
                        self.font, self.font_scale, self.font_color, 1)
+
+    def _add_paused_overlay(self, frame):
+        """Display a paused overlay on the frame"""
+        h, w = frame.shape[:2]
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (0, int(h/2 - 40)), (w, int(h/2 + 40)), (0, 0, 0), -1)
+        cv2.addWeighted(overlay, 0.6, frame, 0.4, 0, frame)
+        cv2.putText(frame, 'PAUSED', (int(w/2) - 60, int(h/2) + 10),
+                   self.font, 1.2, (0, 0, 255), 3)
     
     def generate_stats_graph(self, historical_data, current_session_data):
         """
