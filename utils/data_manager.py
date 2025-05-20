@@ -106,9 +106,13 @@ class DataManager:
         """Save a JSON backup of the session data"""
         backup_file = os.path.join(self.data_dir, f"session_{session_id}.json")
         
-        with open(backup_file, 'w') as f:
-            json.dump(session_data, f, indent=4)
-            
+        try:
+            with open(backup_file, 'w') as f:
+                json.dump(session_data, f, indent=4)
+        except IOError as e:
+            print(f"Failed to write backup file {backup_file}: {e}")
+            return
+
         print(f"Session backup saved to {backup_file}")
     
     def get_historical_data(self, limit=10):
