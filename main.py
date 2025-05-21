@@ -19,7 +19,7 @@ class PunchTracker:
     def __init__(self):
         # Initialize components
         self.pose_detector = PoseDetector()
-        self.punch_counter = PunchCounter()
+        self.punch_counter = PunchCounter(self.pose_detector)
         self.ui_manager = UIManager()
         self.data_manager = DataManager()
         self.calibrator = Calibrator()

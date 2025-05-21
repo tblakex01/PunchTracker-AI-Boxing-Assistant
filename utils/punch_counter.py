@@ -5,6 +5,7 @@ import numpy as np
 import time
 import math
 from collections import deque
+from utils.pose_detector import PoseDetector
 
 class PunchCounter:
     # Punch types
@@ -13,7 +14,10 @@ class PunchCounter:
     HOOK = "hook"
     UPPERCUT = "uppercut"
     
-    def __init__(self):
+    def __init__(self, pose_detector):
+        # Store the pose detector
+        self.pose_detector = pose_detector
+        
         # Counters for different punch types
         self.total_count = 0
         self.punch_counts = {
@@ -198,11 +202,8 @@ class PunchCounter:
         Returns:
             List of detected punches with type and coordinates
         """
-        from utils.pose_detector import PoseDetector
-        
         # Extract hand keypoints
-        pose_detector = PoseDetector()
-        hand_keypoints = pose_detector.get_hand_keypoints(keypoints_list)
+        hand_keypoints = self.pose_detector.get_hand_keypoints(keypoints_list)
         
         # Update position history
         current_time = time.time()
