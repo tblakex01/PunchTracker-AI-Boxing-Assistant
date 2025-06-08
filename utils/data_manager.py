@@ -26,7 +26,11 @@ class DataManager:
         self._initialize_database()
     
     def _initialize_database(self):
-        """Initialize the SQLite database for storing session data"""
+        """
+        Initializes the SQLite database and creates the sessions table if it does not exist.
+        
+        Sets up the schema to store session attributes, including punch counts and combo statistics.
+        """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -61,10 +65,9 @@ class DataManager:
     
     def save_session_data(self, session_data):
         """
-        Save session data to the database
+        Saves a session's data to the database and creates a JSON backup.
         
-        Args:
-            session_data: Dictionary containing session information
+        If session data is provided, inserts session attributes—including punch counts and combo statistics—into the sessions table. Also writes a JSON backup of the session data to disk.
         """
         if not session_data:
             print("No session data to save")
@@ -123,13 +126,13 @@ class DataManager:
     
     def get_historical_data(self, limit=10):
         """
-        Retrieve historical session data from the database
+        Retrieves a list of recent session records with punch and combo statistics.
         
         Args:
-            limit: Maximum number of sessions to retrieve (default 10)
-            
+            limit: The maximum number of sessions to retrieve, ordered by most recent.
+        
         Returns:
-            List of session data dictionaries
+            A list of dictionaries, each containing session date, duration, total punches, punches per minute, punch type counts, and combo statistics including successes, attempts, and detected combos.
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -172,10 +175,10 @@ class DataManager:
     
     def get_stats_summary(self):
         """
-        Generate a summary of all session statistics
+        Generates aggregate statistics across all recorded punch tracking sessions.
         
         Returns:
-            Dictionary with summary statistics
+            dict: A summary containing total sessions, total punches, average and maximum punches per minute, total duration in minutes, punch type distribution percentages, and total combo successes.
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()

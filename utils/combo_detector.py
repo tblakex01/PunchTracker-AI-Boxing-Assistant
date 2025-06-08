@@ -31,22 +31,28 @@ class ComboDetector:
     ]
 
     def __init__(self, predefined_combos=None):
+        """
+        Initializes the ComboDetector with a set of predefined combos.
+        
+        If no combos are provided, uses the default combos sorted by descending sequence length to prioritize longer combos during detection.
+        """
         if predefined_combos is None:
             self.predefined_combos = sorted(self.DEFAULT_COMBOS, key=lambda c: len(c['sequence']), reverse=True)
         else:
             self.predefined_combos = sorted(predefined_combos, key=lambda c: len(c['sequence']), reverse=True)
 
     def detect_combo(self, punch_history):
-        '''
-        Detects a combo from a list of recent punches.
-
+        """
+        Identifies and returns the name of a punch combo detected in the recent punch history.
+        
+        Examines the most recent punches and their timestamps to determine if they match any predefined combo sequence and timing constraints. Returns the combo name if a match is found; otherwise, returns None.
+        
         Args:
-            punch_history: A deque of tuples, where each tuple is (punch_type, timestamp).
-                           The history is ordered from oldest to newest.
-
+            punch_history: A deque of (punch_type, timestamp) tuples ordered from oldest to newest.
+        
         Returns:
-            The name of the detected combo, or None if no combo is detected.
-        '''
+            The name of the detected combo if matched; otherwise, None.
+        """
         if not punch_history or len(punch_history) < 2:
             return None
 

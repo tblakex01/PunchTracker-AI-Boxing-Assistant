@@ -11,6 +11,11 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 class UIManager:
     def __init__(self):
         # UI settings
+        """
+        Initializes UIManager with font, color, and layout settings for rendering UI elements.
+        
+        Sets up font style, color schemes, panel dimensions, and punch type colors used for drawing overlays and statistics on video frames.
+        """
         self.font = cv2.FONT_HERSHEY_SIMPLEX
         self.font_scale = 0.6
         self.font_color = (255, 255, 255)  # White
@@ -32,22 +37,9 @@ class UIManager:
     
     def update_display(self, frame, total_count, punch_counts, session_start_time, sensitivity, paused=False, current_detected_combo=None, last_combo_detected_time=0, combo_display_duration=3, combo_stats=None):
         """
-        Update the UI elements on the frame
+        Renders and overlays UI elements onto a video frame for the punch tracking session.
         
-        Args:
-            frame: The input video frame
-            total_count: Total number of punches detected
-            punch_counts: Dictionary with counts for each punch type
-            session_start_time: Start time of the current session
-            sensitivity: Current sensitivity setting
-            paused: Boolean indicating if the session is paused
-            current_detected_combo: Name of the currently detected combo
-            last_combo_detected_time: Timestamp of the last detected combo
-            combo_display_duration: How long to display a combo name
-            combo_stats: Dictionary of combo statistics
-            
-        Returns:
-            Frame with UI elements added
+        Adds a stats panel, punch and combo statistics, session timing, and sensitivity information to the frame. If a combo was recently detected, displays its name prominently. Overlays a "PAUSED" message if the session is paused, and appends control instructions at the bottom. Returns the frame with all UI elements applied.
         """
         # Create a copy of the frame to avoid modifying the original
         display_frame = frame.copy()
@@ -86,7 +78,17 @@ class UIManager:
         return display_frame
     
     def _add_stats_panel(self, frame, total_count, punch_counts, session_start_time, sensitivity, combo_stats=None):
-        """Add the statistics panel to the frame"""
+        """
+        Draws a semi-transparent statistics panel on the top-right of the frame displaying punch counts, session time, pace, combo statistics, and sensitivity.
+        
+        Args:
+            frame: The video frame to draw the panel on.
+            total_count: Total number of punches detected in the session.
+            punch_counts: Dictionary mapping punch types to their respective counts.
+            session_start_time: Datetime object marking the start of the session, or None.
+            sensitivity: Current sensitivity setting for punch detection.
+            combo_stats: Optional dictionary containing combo statistics (e.g., number of successful combos).
+        """
         h, w = frame.shape[:2]
         
         # Create semi-transparent overlay for stats panel
@@ -157,7 +159,9 @@ class UIManager:
                    self.font, self.font_scale, self.font_color, self.line_thickness)
     
     def _add_instructions(self, frame):
-        """Add instruction text to the frame"""
+        """
+        Adds a semi-transparent instructions panel with keyboard shortcuts to the bottom-left corner of the frame.
+        """
         h, w = frame.shape[:2]
         
         instructions = [

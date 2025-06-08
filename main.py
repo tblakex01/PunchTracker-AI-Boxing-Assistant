@@ -19,6 +19,11 @@ from utils.calibration import Calibrator
 class PunchTracker:
     def __init__(self):
         # Initialize components
+        """
+        Initializes the PunchTracker application and its core components.
+        
+        Sets up pose detection, punch counting, UI management, data handling, calibration, and combo detection modules. Initializes combo detection state, application control flags, session timing, and camera configuration parameters.
+        """
         self.pose_detector = PoseDetector()
         self.punch_counter = PunchCounter(self.pose_detector)
         self.ui_manager = UIManager()
@@ -58,7 +63,9 @@ class PunchTracker:
             raise ValueError("Could not open camera. Check if it's connected properly.")
     
     def start_session(self):
-        """Start a new punching session"""
+        """
+        Starts a new punching session by resetting punch counters, combo detection state, and combo statistics, recording the session start time, and creating a new session record in the data manager.
+        """
         self.session_start_time = datetime.now()
         self.punch_counter.reset_counter()
         # Reset combo stats for the new session
@@ -70,7 +77,11 @@ class PunchTracker:
         print(f"New session started at {self.session_start_time}")
     
     def end_session(self):
-        """End the current session and save data"""
+        """
+        Ends the current punching session and saves session statistics.
+        
+        Compiles session data including start time, duration, total punches, punch type counts, punches per minute, and combo statistics, then saves this information using the data manager.
+        """
         session_duration = (datetime.now() - self.session_start_time).total_seconds()
         session_data = {
             'date': self.session_start_time.strftime('%Y-%m-%d %H:%M:%S'),
@@ -90,7 +101,17 @@ class PunchTracker:
         print("Calibration started. Follow the on-screen instructions.")
     
     def process_frame(self, frame):
-        """Process a single frame from the webcam"""
+        """
+        Processes a single webcam frame for pose detection, punch counting, combo detection, calibration, and UI updates.
+        
+        If the application is paused, updates the UI with current statistics without further processing. If calibration mode is active, processes calibration frames and applies calibration data upon completion. Otherwise, detects punches and checks for combos based on punch event history, updating combo statistics and providing visual feedback for detected punches. The UI is updated with punch and combo information, and pose visualization is overlaid if debug mode is enabled.
+        
+        Args:
+            frame: The current video frame from the webcam.
+        
+        Returns:
+            The processed frame with overlays and UI updates applied.
+        """
         # Detect poses in the frame
         poses = self.pose_detector.detect_pose(frame)
 
