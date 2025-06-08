@@ -135,6 +135,10 @@ This project is licensed under the MIT License - see the `LICENSE` file for deta
 - [OpenCV](https://opencv.org/) for computer vision capabilities
 - [NumPy](https://numpy.org/) and [Matplotlib](https://matplotlib.org/) for data processing and visualization
 
+## 🌟 Future Features / Contributing Ideas
+
+Looking for ways to contribute or curious about what's next? Check out our [list of feature ideas](./FEATURE_IDEAS.md)!
+
 ---
 
 <p align="center">
