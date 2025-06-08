@@ -16,6 +16,11 @@ class PunchCounter:
     
     def __init__(self, pose_detector):
         # Store the pose detector
+        """
+        Initializes a PunchCounter instance for detecting and tracking punch movements.
+        
+        Sets up counters for total and per-type punches, histories for wrist positions and timestamps, cooldown timers to prevent rapid repeated detections, a history of recent punch events for combo detection, punch detection thresholds, and calibration parameters.
+        """
         self.pose_detector = pose_detector
         
         # Counters for different punch types
@@ -197,13 +202,15 @@ class PunchCounter:
     
     def detect_punches(self, keypoints_list):
         """
-        Detect punches from pose keypoints
+        Detects and classifies punches from a sequence of pose keypoints.
+        
+        Analyzes wrist movements to determine if a punch has occurred, classifies the punch type, updates punch counters, and records recent punch events with timestamps for further analysis.
         
         Args:
-            keypoints_list: List of keypoints from the pose detector
-            
+            keypoints_list: List of pose keypoints for the current frame.
+        
         Returns:
-            List of detected punches with type and coordinates
+            A list of tuples, each containing the detected punch type and the corresponding wrist coordinates.
         """
         # Extract hand keypoints
         hand_keypoints = self.pose_detector.get_hand_keypoints(keypoints_list)
