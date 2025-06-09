@@ -1,7 +1,7 @@
 # 🥊 PunchTracker - AI Boxing Assistant 🥊
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/python-v3.8+-blue.svg)
+![Python](https://img.shields.io/badge/python-v3.11+-blue.svg)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-v2.12+-orange.svg)
 ![OpenCV](https://img.shields.io/badge/OpenCV-v4.5+-green.svg)
 ![Status](https://img.shields.io/badge/status-active-success.svg)
@@ -32,7 +32,7 @@ A real-time boxing assistant application that uses computer vision and machine l
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.11 or higher
 - Webcam
 - Required libraries (see requirements.txt)
 
