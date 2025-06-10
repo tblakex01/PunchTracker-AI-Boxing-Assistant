@@ -8,3 +8,12 @@ Before committing, run the following commands:
 2. `flake8`
 3. `pytest`
 
+# Contributor Guidelines
+
+## Environment Setup
+
+Use **Python 3.11+**.
+
+## Testing
+
+Run `pytest`
