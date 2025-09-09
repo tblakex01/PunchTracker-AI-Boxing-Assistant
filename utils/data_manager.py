@@ -41,7 +41,10 @@ class DataManager:
             jab_count INTEGER,
             cross_count INTEGER,
             hook_count INTEGER,
-            uppercut_count INTEGER
+            uppercut_count INTEGER,
+            combo_successes INTEGER DEFAULT 0,
+            combo_attempts INTEGER DEFAULT 0,
+            combo_details TEXT DEFAULT '{}'
         )
         ''')
         
@@ -76,8 +79,8 @@ class DataManager:
         # Insert session data into database
         cursor.execute('''
         INSERT INTO sessions 
-        (date, duration, total_punches, punches_per_minute, jab_count, cross_count, hook_count, uppercut_count)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (date, duration, total_punches, punches_per_minute, jab_count, cross_count, hook_count, uppercut_count, combo_successes, combo_attempts, combo_details)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             session_data['date'],
             session_data['duration'],
@@ -86,7 +89,10 @@ class DataManager:
             punch_types.get('jab', 0),
             punch_types.get('cross', 0),
             punch_types.get('hook', 0),
-            punch_types.get('uppercut', 0)
+            punch_types.get('uppercut', 0),
+            session_data.get('combo_stats', {}).get('successes', 0), # combo_successes
+            session_data.get('combo_stats', {}).get('attempts', 0),  # combo_attempts
+            json.dumps(session_data.get('combo_stats', {}).get('detected_combos', {})) # combo_details_json
         ))
         
         conn.commit()
@@ -131,7 +137,8 @@ class DataManager:
         # Get the most recent sessions
         cursor.execute('''
         SELECT date, duration, total_punches, punches_per_minute, 
-               jab_count, cross_count, hook_count, uppercut_count
+               jab_count, cross_count, hook_count, uppercut_count,
+               combo_successes, combo_attempts, combo_details
         FROM sessions
         ORDER BY date DESC
         LIMIT ?
@@ -153,6 +160,11 @@ class DataManager:
                     'cross': session[5],
                     'hook': session[6],
                     'uppercut': session[7]
+                },
+                'combo_stats': {
+                    'successes': session[8],
+                    'attempts': session[9],
+                    'detected_combos': json.loads(session[10]) if session[10] else {}
                 }
             })
         
@@ -179,7 +191,8 @@ class DataManager:
             SUM(cross_count) as total_crosses,
             SUM(hook_count) as total_hooks,
             SUM(uppercut_count) as total_uppercuts,
-            SUM(duration) as total_duration
+            SUM(duration) as total_duration,
+            SUM(combo_successes) as total_combo_successes
         FROM sessions
         ''')
         
@@ -198,7 +211,8 @@ class DataManager:
                     'cross': 0,
                     'hook': 0,
                     'uppercut': 0
-                }
+                },
+                'total_combo_successes': 0
             }
         
         # Calculate the punch distribution percentages
@@ -215,7 +229,8 @@ class DataManager:
                 'cross': (result[5] / total_punches) * 100 if result[5] else 0,
                 'hook': (result[6] / total_punches) * 100 if result[6] else 0,
                 'uppercut': (result[7] / total_punches) * 100 if result[7] else 0
-            }
+            },
+            'total_combo_successes': result[9] if result[9] is not None else 0
         }
         
         return summary

@@ -12,6 +12,7 @@ from datetime import datetime
 from utils.pose_detector import PoseDetector
 from utils.punch_counter import PunchCounter
 from utils.ui_manager import UIManager
+from utils.combo_detector import ComboDetector # Added
 from utils.data_manager import DataManager
 from utils.calibration import Calibrator
 
@@ -24,6 +25,17 @@ class PunchTracker:
         self.data_manager = DataManager()
         self.calibrator = Calibrator()
         
+        # Combo Detection related attributes
+        self.combo_detector = ComboDetector() # Uses default combos
+        self.current_detected_combo = None
+        self.last_combo_detected_time = 0
+        self.combo_display_duration = 3.0  # seconds
+        self.combo_stats = {
+            'attempts': 0,
+            'successes': 0,
+            'detected_combos': {}
+        }
+
         # Application state
         self.is_running = False
         self.is_calibrating = False
@@ -49,6 +61,11 @@ class PunchTracker:
         """Start a new punching session"""
         self.session_start_time = datetime.now()
         self.punch_counter.reset_counter()
+        # Reset combo stats for the new session
+        self.current_detected_combo = None
+        self.last_combo_detected_time = 0
+        self.combo_stats = {'attempts': 0, 'successes': 0, 'detected_combos': {}}
+        print("Combo stats reset for new session.")
         self.data_manager.create_new_session()
         print(f"New session started at {self.session_start_time}")
     
@@ -60,7 +77,8 @@ class PunchTracker:
             'duration': session_duration,
             'total_punches': self.punch_counter.total_count,
             'punch_types': self.punch_counter.get_punch_types_count(),
-            'punches_per_minute': self.punch_counter.total_count / (session_duration / 60) if session_duration > 0 else 0
+            'punches_per_minute': self.punch_counter.total_count / (session_duration / 60) if session_duration > 0 else 0,
+            'combo_stats': self.combo_stats
         }
         self.data_manager.save_session_data(session_data)
         print(f"Session ended. {self.punch_counter.total_count} punches recorded over {session_duration:.1f} seconds.")
@@ -83,7 +101,11 @@ class PunchTracker:
                 self.punch_counter.get_punch_types_count(),
                 self.session_start_time,
                 self.punch_counter.velocity_threshold,
-                paused=True
+                paused=True,
+                current_detected_combo=self.current_detected_combo,
+                last_combo_detected_time=self.last_combo_detected_time,
+                combo_display_duration=self.combo_display_duration,
+                combo_stats=self.combo_stats
             )
         
         if self.is_calibrating:
@@ -96,6 +118,24 @@ class PunchTracker:
         else:
             # Normal processing - detect punches
             punches_detected = self.punch_counter.detect_punches(poses)
+
+            # Combo Detection Logic
+            if len(self.punch_counter.punch_event_history) > 0:
+                detected_combo_name = self.combo_detector.detect_combo(self.punch_counter.punch_event_history)
+
+                if detected_combo_name:
+                    if self.current_detected_combo != detected_combo_name or \
+                       (time.time() - self.last_combo_detected_time > self.combo_display_duration):
+
+                        print(f"COMBO DETECTED: {detected_combo_name}")
+                        self.current_detected_combo = detected_combo_name
+                        self.last_combo_detected_time = time.time()
+
+                        self.combo_stats['successes'] += 1
+                        self.combo_stats['detected_combos'][detected_combo_name] = \
+                            self.combo_stats['detected_combos'].get(detected_combo_name, 0) + 1
+
+                        self.punch_counter.punch_event_history.clear()
             
             # Add visual feedback if punches are detected
             if punches_detected:
@@ -111,7 +151,11 @@ class PunchTracker:
                 self.punch_counter.get_punch_types_count(),
                 self.session_start_time,
                 self.punch_counter.velocity_threshold,
-                paused=False
+                paused=False,
+                current_detected_combo=self.current_detected_combo,
+                last_combo_detected_time=self.last_combo_detected_time,
+                combo_display_duration=self.combo_display_duration,
+                combo_stats=self.combo_stats
             )
             
             # Show debug visualization if enabled

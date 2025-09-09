@@ -46,6 +46,9 @@ class PunchCounter:
         }
         self.punch_cooldown = 0.5  # seconds
         
+        # Stores (punch_type, timestamp) for combo detection
+        self.punch_event_history = deque(maxlen=7)
+
         # Punch detection parameters
         self.velocity_threshold = 50  # pixels per frame
         self.direction_threshold = 0.7  # cosine similarity threshold
@@ -235,6 +238,10 @@ class PunchCounter:
                 self.punch_counts[punch_type] += 1
                 self.total_count += 1
                 
+                # Record punch event for combo detection
+                # Use the timestamp associated with the punch from timestamp_history
+                self.punch_event_history.append((punch_type, self.timestamp_history[wrist_key][-1]))
+
                 # Add to detected punches
                 detected_punches.append((punch_type, wrist_coords))
                 

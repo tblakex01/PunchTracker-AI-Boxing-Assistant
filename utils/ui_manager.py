@@ -19,7 +19,7 @@ class UIManager:
         
         # Stats panel dimensions
         self.panel_width = 200
-        self.panel_height = 200
+        self.panel_height = 230 # Increased by 30 for combo stats
         self.panel_padding = 10
         
         # Punch type colors for visualization
@@ -30,7 +30,7 @@ class UIManager:
             "uppercut": (155, 89, 182)  # Purple
         }
     
-    def update_display(self, frame, total_count, punch_counts, session_start_time, sensitivity, paused=False):
+    def update_display(self, frame, total_count, punch_counts, session_start_time, sensitivity, paused=False, current_detected_combo=None, last_combo_detected_time=0, combo_display_duration=3, combo_stats=None):
         """
         Update the UI elements on the frame
         
@@ -39,6 +39,12 @@ class UIManager:
             total_count: Total number of punches detected
             punch_counts: Dictionary with counts for each punch type
             session_start_time: Start time of the current session
+            sensitivity: Current sensitivity setting
+            paused: Boolean indicating if the session is paused
+            current_detected_combo: Name of the currently detected combo
+            last_combo_detected_time: Timestamp of the last detected combo
+            combo_display_duration: How long to display a combo name
+            combo_stats: Dictionary of combo statistics
             
         Returns:
             Frame with UI elements added
@@ -47,7 +53,29 @@ class UIManager:
         display_frame = frame.copy()
         
         # Add semi-transparent overlay for stats panel
-        self._add_stats_panel(display_frame, total_count, punch_counts, session_start_time, sensitivity)
+        self._add_stats_panel(display_frame, total_count, punch_counts, session_start_time, sensitivity, combo_stats)
+
+        # Display current combo
+        if current_detected_combo and (time.time() - last_combo_detected_time < combo_display_duration):
+            h, w = display_frame.shape[:2]
+            combo_font_scale = 1.2
+            combo_thickness = 2
+            (text_w, text_h), _ = cv2.getTextSize(current_detected_combo, self.font, combo_font_scale, combo_thickness)
+
+            text_x = (w - text_w) // 2
+            # Position above the stats panel (assuming panel is at top right)
+            # or in a noticeable central area if panel is not at top.
+            # Let's try to place it below the center, ensuring it's above instructions.
+            # Instruction height: (len(instructions) * 25 + 10) -> approx 8*25+10 = 210
+            # If panel is at top (h=230), text_y can be panel_height + 50
+            text_y = self.panel_height + 50 # Below a top panel
+            if text_y > h - 220 : # Avoid overlapping with bottom instructions
+                 text_y = (h // 2) + 50 # Fallback to just below center
+
+            cv2.putText(display_frame, current_detected_combo, (text_x, text_y),
+                        self.font, combo_font_scale, (0,0,0), combo_thickness + 3, cv2.LINE_AA) # Black outline
+            cv2.putText(display_frame, current_detected_combo, (text_x, text_y),
+                        self.font, combo_font_scale, (50, 255, 50), combo_thickness, cv2.LINE_AA) # Bright green color
 
         if paused:
             self._add_paused_overlay(display_frame)
@@ -57,7 +85,7 @@ class UIManager:
         
         return display_frame
     
-    def _add_stats_panel(self, frame, total_count, punch_counts, session_start_time, sensitivity):
+    def _add_stats_panel(self, frame, total_count, punch_counts, session_start_time, sensitivity, combo_stats=None):
         """Add the statistics panel to the frame"""
         h, w = frame.shape[:2]
         
@@ -88,7 +116,7 @@ class UIManager:
                    self.font, self.font_scale, self.font_color, self.line_thickness)
         
         # Add individual punch counts
-        y_offset = count_y + 5
+        y_offset = count_y + 5 # Start y_offset after "Total: X"
         for punch_type, count in punch_counts.items():
             y_offset += 25
             color = self.punch_colors.get(punch_type, self.font_color)
@@ -96,26 +124,36 @@ class UIManager:
                        (panel_x + 10, y_offset),
                        self.font, self.font_scale, color, self.line_thickness)
         
-        # Add session time
+        # Session time, Pace, and Combo Stats will follow sequentially
+        current_stat_y = y_offset
+
         if session_start_time:
+            current_stat_y += 25
             session_duration = datetime.now() - session_start_time
             minutes, seconds = divmod(session_duration.seconds, 60)
             time_str = f"Time: {minutes:02d}:{seconds:02d}"
             cv2.putText(frame, time_str,
-                       (panel_x + 10, y_offset + 30),
+                       (panel_x + 10, current_stat_y),
                        self.font, self.font_scale, self.font_color, self.line_thickness)
 
-            # Calculate and display punches per minute
             minutes_float = session_duration.total_seconds() / 60
             if minutes_float > 0:
+                current_stat_y += 25
                 ppm = total_count / minutes_float
                 cv2.putText(frame, f"Pace: {ppm:.1f} p/min",
-                           (panel_x + 10, y_offset + 55),
+                           (panel_x + 10, current_stat_y),
                            self.font, self.font_scale, self.font_color, self.line_thickness)
 
-        # Show current sensitivity
+        if combo_stats:
+            current_stat_y += 25
+            cv2.putText(frame, f"Combos: {combo_stats.get('successes', 0)}",
+                       (panel_x + 10, current_stat_y),
+                       self.font, self.font_scale, (0, 255, 255), self.line_thickness) # Cyan color
+
+        # Show current sensitivity - always at the bottom of the panel
+        sensitivity_y_pos = panel_y + self.panel_height - 10 # Uses updated panel_height
         cv2.putText(frame, f"Sens.: {sensitivity}",
-                   (panel_x + 10, panel_y + self.panel_height - 10),
+                   (panel_x + 10, sensitivity_y_pos),
                    self.font, self.font_scale, self.font_color, self.line_thickness)
     
     def _add_instructions(self, frame):
