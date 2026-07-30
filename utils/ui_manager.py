@@ -30,7 +30,7 @@ class UIManager:
             "uppercut": (155, 89, 182)  # Purple
         }
     
-    def update_display(self, frame, total_count, punch_counts, session_start_time, sensitivity, paused=False):
+    def update_display(self, frame, total_count, punch_counts, session_start_time, sensitivity, speed_metrics, paused=False):
         """
         Update the UI elements on the frame
         
@@ -47,7 +47,7 @@ class UIManager:
         display_frame = frame.copy()
         
         # Add semi-transparent overlay for stats panel
-        self._add_stats_panel(display_frame, total_count, punch_counts, session_start_time, sensitivity)
+        self._add_stats_panel(display_frame, total_count, punch_counts, session_start_time, sensitivity, speed_metrics)
 
         if paused:
             self._add_paused_overlay(display_frame)
@@ -57,7 +57,7 @@ class UIManager:
         
         return display_frame
     
-    def _add_stats_panel(self, frame, total_count, punch_counts, session_start_time, sensitivity):
+    def _add_stats_panel(self, frame, total_count, punch_counts, session_start_time, sensitivity, speed_metrics):
         """Add the statistics panel to the frame"""
         h, w = frame.shape[:2]
         
@@ -112,6 +112,20 @@ class UIManager:
                 cv2.putText(frame, f"Pace: {ppm:.1f} p/min",
                            (panel_x + 10, y_offset + 55),
                            self.font, self.font_scale, self.font_color, self.line_thickness)
+
+        # Show current speed and power
+        if speed_metrics:
+            cv2.putText(frame, f"Speed: {speed_metrics['current_speed']:.2f} m/s",
+                       (panel_x + 10, panel_y + self.panel_height - 55),
+                       self.font, self.font_scale, self.font_color, self.line_thickness)
+            cv2.putText(frame, f"Power: {speed_metrics['current_power']:.1f}",
+                       (panel_x + 10, panel_y + self.panel_height - 35),
+                       self.font, self.font_scale, self.font_color, self.line_thickness)
+
+            peak_text = f"Peak {speed_metrics['peak_speed']:.2f} m/s / {speed_metrics['peak_power']:.1f}"
+            cv2.putText(frame, peak_text,
+                       (panel_x + 10, panel_y + self.panel_height - 75),
+                       self.font, self.font_scale, self.font_color, self.line_thickness)
 
         # Show current sensitivity
         cv2.putText(frame, f"Sens.: {sensitivity}",

@@ -60,7 +60,9 @@ class PunchTracker:
             'duration': session_duration,
             'total_punches': self.punch_counter.total_count,
             'punch_types': self.punch_counter.get_punch_types_count(),
-            'punches_per_minute': self.punch_counter.total_count / (session_duration / 60) if session_duration > 0 else 0
+            'punches_per_minute': self.punch_counter.total_count / (session_duration / 60) if session_duration > 0 else 0,
+            'peak_speed': self.punch_counter.peak_speed,
+            'peak_power': self.punch_counter.peak_power
         }
         self.data_manager.save_session_data(session_data)
         print(f"Session ended. {self.punch_counter.total_count} punches recorded over {session_duration:.1f} seconds.")
@@ -83,6 +85,7 @@ class PunchTracker:
                 self.punch_counter.get_punch_types_count(),
                 self.session_start_time,
                 self.punch_counter.velocity_threshold,
+                self.punch_counter.get_speed_metrics(),
                 paused=True
             )
         
@@ -111,6 +114,7 @@ class PunchTracker:
                 self.punch_counter.get_punch_types_count(),
                 self.session_start_time,
                 self.punch_counter.velocity_threshold,
+                self.punch_counter.get_speed_metrics(),
                 paused=False
             )
             
