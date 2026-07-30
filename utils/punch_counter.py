@@ -1,11 +1,9 @@
 """
 Punch Counter module for detecting and tracking punch movements
 """
-import numpy as np
 import time
 import math
 from collections import deque
-from utils.pose_detector import PoseDetector
 
 class PunchCounter:
     # Punch types
@@ -14,8 +12,9 @@ class PunchCounter:
     HOOK = "hook"
     UPPERCUT = "uppercut"
     
-    def __init__(self, pose_detector):
-        # Store the pose detector
+    def __init__(self, pose_detector=None):
+        """Initialize the punch counter"""
+        # Store the pose detector (can be None for testing)
         self.pose_detector = pose_detector
         
         # Counters for different punch types
@@ -45,9 +44,21 @@ class PunchCounter:
             "right": 0
         }
         self.punch_cooldown = 0.5  # seconds
+
+        # Video/physics parameters
+        self.fps = 30  # Assumed frame rate for velocity calculations
+        self.pixels_per_meter = 100.0  # Rough pixel to meter conversion
+        self.arm_mass = 5.0  # Approximate mass of the punching arm (kg)
+
+        # Speed/power tracking
+        self.current_speed = 0.0
+        self.peak_speed = 0.0
+        self.current_power = 0.0
+        self.peak_power = 0.0
         
         # Punch detection parameters
-        self.velocity_threshold = 50  # pixels per frame
+        # Velocity threshold now represents meters per second
+        self.velocity_threshold = 1.0
         self.direction_threshold = 0.7  # cosine similarity threshold
         
         # Calibration adjustments
@@ -73,6 +84,15 @@ class PunchCounter:
     def get_punch_types_count(self):
         """Get the count of each punch type"""
         return self.punch_counts
+
+    def get_speed_metrics(self):
+        """Return current and peak speed and power measurements"""
+        return {
+            'current_speed': self.current_speed,
+            'peak_speed': self.peak_speed,
+            'current_power': self.current_power,
+            'peak_power': self.peak_power,
+        }
     
     def apply_calibration(self, calibration_data):
         """Apply calibration adjustments"""
@@ -94,19 +114,22 @@ class PunchCounter:
         if pos1 is None or pos2 is None:
             return 0, None
             
-        # Calculate displacement
+        # Calculate displacement in pixels
         dx = pos2[0] - pos1[0]
         dy = pos2[1] - pos1[1]
-        displacement = math.sqrt(dx*dx + dy*dy)
-        
+        displacement_px = math.sqrt(dx * dx + dy * dy)
+
         # Calculate time difference
         dt = time2 - time1
-        if dt == 0:
-            return 0, None
-            
-        # Calculate velocity and direction
-        velocity = displacement / dt
-        direction = (dx/displacement, dy/displacement) if displacement > 0 else None
+        if dt <= 0:
+            dt = 1.0 / self.fps
+
+        # Convert displacement to meters
+        displacement_m = displacement_px / self.pixels_per_meter
+
+        # Calculate velocity (m/s)
+        velocity = displacement_m / dt
+        direction = (dx / displacement_px, dy / displacement_px) if displacement_px > 0 else None
         
         # Apply calibration
         velocity *= self.calibration_data["velocity_multiplier"]
@@ -219,10 +242,17 @@ class PunchCounter:
         for hand, wrist_key in [("left", "left_wrist"), ("right", "right_wrist")]:
             # Calculate velocity and direction
             velocity, direction = self._calculate_velocity(
-                self.position_history[wrist_key], 
+                self.position_history[wrist_key],
                 self.timestamp_history[wrist_key]
             )
-            
+
+            # Update current speed and power metrics
+            self.current_speed = velocity
+            power = 0.5 * self.arm_mass * (velocity ** 2)
+            self.current_power = power
+            self.peak_speed = max(self.peak_speed, velocity)
+            self.peak_power = max(self.peak_power, power)
+
             # Check if motion is a punch
             if self._is_punch_motion(velocity, direction, hand):
                 # Classify punch type

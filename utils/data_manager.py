@@ -41,7 +41,9 @@ class DataManager:
             jab_count INTEGER,
             cross_count INTEGER,
             hook_count INTEGER,
-            uppercut_count INTEGER
+            uppercut_count INTEGER,
+            peak_speed REAL,
+            peak_power REAL
         )
         ''')
         
@@ -75,9 +77,11 @@ class DataManager:
         
         # Insert session data into database
         cursor.execute('''
-        INSERT INTO sessions 
-        (date, duration, total_punches, punches_per_minute, jab_count, cross_count, hook_count, uppercut_count)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO sessions
+        (date, duration, total_punches, punches_per_minute,
+         jab_count, cross_count, hook_count, uppercut_count,
+         peak_speed, peak_power)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             session_data['date'],
             session_data['duration'],
@@ -86,7 +90,9 @@ class DataManager:
             punch_types.get('jab', 0),
             punch_types.get('cross', 0),
             punch_types.get('hook', 0),
-            punch_types.get('uppercut', 0)
+            punch_types.get('uppercut', 0),
+            session_data.get('peak_speed', 0.0),
+            session_data.get('peak_power', 0.0)
         ))
         
         conn.commit()
@@ -130,8 +136,9 @@ class DataManager:
         
         # Get the most recent sessions
         cursor.execute('''
-        SELECT date, duration, total_punches, punches_per_minute, 
-               jab_count, cross_count, hook_count, uppercut_count
+        SELECT date, duration, total_punches, punches_per_minute,
+               jab_count, cross_count, hook_count, uppercut_count,
+               peak_speed, peak_power
         FROM sessions
         ORDER BY date DESC
         LIMIT ?
@@ -153,7 +160,9 @@ class DataManager:
                     'cross': session[5],
                     'hook': session[6],
                     'uppercut': session[7]
-                }
+                },
+                'peak_speed': session[8],
+                'peak_power': session[9]
             })
         
         return historical_data
@@ -170,7 +179,7 @@ class DataManager:
         
         # Get aggregate statistics
         cursor.execute('''
-        SELECT 
+        SELECT
             COUNT(*) as total_sessions,
             SUM(total_punches) as total_punches,
             AVG(punches_per_minute) as avg_ppm,
@@ -179,6 +188,8 @@ class DataManager:
             SUM(cross_count) as total_crosses,
             SUM(hook_count) as total_hooks,
             SUM(uppercut_count) as total_uppercuts,
+            MAX(peak_speed) as max_speed,
+            MAX(peak_power) as max_power,
             SUM(duration) as total_duration
         FROM sessions
         ''')
@@ -209,7 +220,7 @@ class DataManager:
             'total_punches': result[1],
             'avg_ppm': result[2],
             'max_ppm': result[3],
-            'total_minutes': result[8] / 60 if result[8] else 0,
+            'total_minutes': result[10] / 60 if result[10] else 0,
             'punch_distribution': {
                 'jab': (result[4] / total_punches) * 100 if result[4] else 0,
                 'cross': (result[5] / total_punches) * 100 if result[5] else 0,
@@ -217,5 +228,8 @@ class DataManager:
                 'uppercut': (result[7] / total_punches) * 100 if result[7] else 0
             }
         }
+
+        summary['max_speed'] = result[8]
+        summary['max_power'] = result[9]
         
         return summary
